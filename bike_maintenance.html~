@@ -1,0 +1,674 @@
+<html> 
+<head> 
+
+  <meta name=viewport content="user-scalable=no,width=device-width" />
+
+  <link rel="stylesheet" href="jquery/mobile/jquery.mobile-1.4.1.min.css" />
+  <script src="jquery/jquery-1.11.0.min.js"></script>
+  <script src="jquery/mobile/jquery.mobile-1.4.2.js"></script>
+ 
+</head> 
+
+<body> 
+
+<div data-role=page id=home>
+  <div data-role=header>
+    <h1>Bikes</h1>
+    <a href=# data-role="button" id="add_bike" data-icon="plus" data-iconpos="notext" data-theme="a" data-inline="true" class="ui-btn-right" rel="external">Plus</a>
+  </div>
+
+  <div data-role=content>
+	  <ul data-role="listview" id="bike_list">
+	  </ul>
+  </div>
+</div>
+
+<div data-role=page id="add_bike_win" data-add-back-btn=true>
+  <div data-role=header>
+    <a href=# data-icon="delete" id="add_bike_cancel" rel="external">Cancel</a>
+      <h1>Add Bike</h1>
+    <a href=# data-icon="check" id="add_bike_save" rel="external">Save</a>
+  </div>
+
+  <div data-role=content>
+
+    <label for="bike_year" class="ui-hidden-accessible">Year:</label>
+    <input type="text" name="bike_year" id="bike_year" placeholder="Year">
+    <label for="bike_manufacturer_name" class="ui-hidden-accessible">Manufacturer:</label>
+    <input type="text" name="bike_manufacturer_name" id="bike_manufacturer_name" placeholder="Manufacturer">
+    <label for="bike_model_name" class="ui-hidden-accessible">Model:</label>
+    <input type="text" name="bike_model_name" id="bike_model_name" placeholder="Model">
+
+  </div>
+</div>
+
+<div data-role=page id="bike_win" data-add-back-btn=true>
+  <div data-role=header>
+    <a href=# data-icon="back" id="bike_win_back" rel="external">Back</a>
+    <h1>Bike</h1>
+    <a href=# data-icon="check" id="bike_win_save" rel="external">Save</a>
+  </div>
+
+
+
+    <input type="text" name="bike_win_bike_year" id="bike_win_bike_year" placeholder="Year">
+
+    <input type="text" name="bike_win_bike_manufacturer_name" id="bike_win_bike_manufacturer_name" placeholder="Manufacturer">
+
+    <input type="text" name="bike_win_bike_model_name" id="bike_win_bike_model_name" placeholder="Model">
+
+
+  <div data-role=content>
+	  <ul data-role="listview" id="component_list">
+	  </ul>
+  </div>
+  <button class="ui-btn" id="bike_win_delete">Delete</button>
+</div>
+
+
+<div data-role=page id="component_win" data-add-back-btn=true>
+  <div data-role=header>
+    <a href=# data-icon="back" id="component_win_back" rel="external">Back</a>
+      <h1 id="component_win_component_type"></h1>
+    <a href=# data-icon="check" id="component_win_save" rel="external">Save</a>
+  </div>
+
+  <div data-role=content>
+    <label for="component_win_component_manufacturer_name" class="ui-hidden-accessible">Manufacturer:</label>
+    <input type="text" name="component_win_component_manufacturer_name" id="component_win_component_manufacturer_name" placeholder="Manufacturer">
+    <label for="component_win_component_model_name" class="ui-hidden-accessible">Model:</label>
+    <input type="text" name="component_win_component_model_name" id="component_win_component_model_name" placeholder="Model">
+    <label for="component_win_component_installed_date">Installed Date:</label>
+    <input type="date" name="component_win_component_installed_date" id="component_win_component_installed_date" value=""  />	
+    <label for="component_win_component_last_maintenance_date">Last Maintenance Date:</label>
+    <input type="date" name="component_win_component_last_maintenance_date" id="component_win_component_last_maintenance_date" value=""  />	
+  </div>
+</div>
+
+
+</body>
+
+</html>
+
+ <script>
+
+var bike_id;
+var component_id;
+
+var db = openDatabase ("Test", "1.0", "Test", 65535);
+
+function db_create() {
+
+  /*
+   * A DB TRANSACTION TO DROP AND CREATE ALL TABLES
+   */
+  db.transaction(
+    function (tx) {
+
+      //tx.executeSql("drop table BIKE");
+
+      //tx.executeSql("drop table COMPONENT");
+
+      //tx.executeSql("drop table COMPONENT_TYPE");
+
+      tx.executeSql("CREATE TABLE IF NOT EXISTS BIKE (" +
+        "Bike_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+        "Bike_year INTEGER NOT NULL, " +
+        "Bike_manufacturer_name VARCHAR(100) NOT NULL, " + 
+        "Bike_model_name VARCHAR(100) NOT NULL);"); 
+
+      tx.executeSql("CREATE TABLE IF NOT EXISTS COMPONENT (" +
+        "Component_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+        "Component_manufacturer_name VARCHAR(100) NOT NULL, " + 
+        "Component_model_name VARCHAR(100) NOT NULL, " + 
+        "Component_installed_date DATE, " +
+        "Component_last_maintenance_date DATE, " +
+        "Component_type_id INTEGER NOT NULL, " +
+        "Bike_id INTEGER NOT NULL, " +
+        "FOREIGN KEY(Component_type_id) REFERENCES COMPONENT_TYPE(Component_type_id) ON DELETE CASCADE ON UPDATE CASCADE, " +
+        "FOREIGN KEY(Bike_id) REFERENCES BIKE(Bike_id) ON DELETE CASCADE ON UPDATE CASCADE);");
+
+      tx.executeSql("CREATE TABLE IF NOT EXISTS COMPONENT_TYPE (" +
+        "Component_type_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+        "Component_type_name VARCHAR(100) NOT NULL);");
+
+      tx.executeSql ("SELECT Component_type_id FROM COMPONENT_TYPE", undefined, 
+        function (tx1, result1) {
+
+          if (result1.rows.length == 0) {
+
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Fork')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Rear Shock')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Front Tire')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Rear Tire')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Brakes')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Front Derailleur')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Rear Derailleur')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Crankset')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Chain')");
+            tx1.executeSql("INSERT INTO COMPONENT_TYPE VALUES (NULL, 'Sprocket/Cassette')");
+          }
+        }
+      );
+    }
+  );
+
+}
+
+
+
+$(window).load(function() {
+	db_create();
+	setTimeout(get_bike_list, 100);
+});
+
+
+$(document).on("pagebeforeshow","#home",function() {
+
+  get_bike_list();
+
+});
+
+$(document).on("pagebeforeshow","#add_bike_win",function() {
+
+  $("#bike_year").val('');
+  $("#bike_manufacturer_name").val('');
+  $("#bike_model_name").val('');
+
+});
+
+$(document).on("pagebeforeshow","#bike_win",function() {
+
+  $("#bike_win_bike_year").val('');
+  $("#bike_win_bike_manufacturer_name").val('');
+  $("#bike_win_bike_model_name").val('');
+
+  db.transaction (
+    function (tx) {
+
+      /*
+       * GET THE BIKE INFO
+       */
+      tx.executeSql ("SELECT * FROM BIKE where Bike_id=?", [bike_id], 
+        function (tx1, result1) {
+
+          if (result1.rows.length) {
+            var row = result1.rows.item(0);
+            var bike_year = row.Bike_year;
+            var bike_manufacturer_name = row.Bike_manufacturer_name;
+            var bike_model_name = row.Bike_model_name;
+
+            $("#bike_win_bike_year").val(bike_year);
+            $("#bike_win_bike_manufacturer_name").val(bike_manufacturer_name);
+            $("#bike_win_bike_model_name").val(bike_model_name);
+          }
+        }
+      );
+
+      /*
+       * GET THE COMPONENT INFO FOR THAT BIKE
+       */
+      tx.executeSql ("SELECT Bike_id, " +
+        "Component_id, " +
+        "Component_manufacturer_name, " + 
+        "Component_model_name, " + 
+        "Component_installed_date, " +
+        "Component_last_maintenance_date, " +
+        "Component_type_name " + 
+        "FROM COMPONENT, COMPONENT_TYPE WHERE " +
+        "COMPONENT.Component_type_id = COMPONENT_TYPE.Component_type_id and " +
+        "Bike_id=?", [bike_id], 
+        function (tx1, result1) {
+      
+          $('#component_list li').remove();
+
+          if (result1.rows.length) {
+        
+
+
+            for (var i = 0; i < result1.rows.length; i++) {
+              var row = result1.rows.item(i);
+              var component_id = row.Component_id;
+              var component_type_name = row.Component_type_name;
+              var component_manufacturer_name = row.Component_manufacturer_name;
+              var component_model_name = row.Component_model_name;
+              var component_installed_date = row.Component_installed_date;
+              var component_last_maintenance_date = row.Component_last_maintenance_date;
+
+              if (component_installed_date == null) {
+                component_installed_date = '';
+              }
+
+              if (component_last_maintenance_date == null) {
+                component_last_maintenance_date = '';
+              }
+
+              //$('#component_list').append("<li><a href='#component_win' data-transition='slide' " + 
+              //              "onclick='component_id=" + 
+              //              component_id + "'>" +
+              //              component_type_name + ": " + 
+              //              component_manufacturer_name + "&nbsp;" + 
+              //              component_model_name + 
+              //              "</a></li>").listview('refresh');		
+
+              $('#component_list').append("<li><a href='#component_win' data-transition='slide' " + 
+                            "onclick='component_id=" + 
+                            component_id + "'>" +
+                            component_type_name + 
+                            "<p>Manufacturer: " + component_manufacturer_name + "</p>" + 
+                            "<p>Model: " + component_model_name + "</p>" + 
+                            "<p>Last Maintenance: " + component_last_maintenance_date + "</p>" +
+                            "</a></li>").listview('refresh');
+
+	
+            }
+          }
+        }
+      );
+
+
+    }
+  ); 
+
+});
+
+
+
+$(document).on("pagebeforeshow","#component_win",function() {
+
+   //alert(bike_id + " " + component_id);
+
+   $("#component_win_component_manufacturer_name").val('');
+   $("#component_win_component_model_name").val('');
+   $("#component_win_component_installed_date").val('');
+   $("#component_win_component_last_maintenance_date").val('');
+   //$("#component_win_component_type").val('');        
+
+   /*db.transaction (function (transaction) 
+   {
+     var sql = "SELECT * FROM COMPONENT_TYPE";
+     transaction.executeSql (sql, undefined, 
+     function (transaction, result)
+     {
+        if (result.rows.length)
+        {
+
+          $('#component_win_component_type option').remove();
+
+          for (var i = 0; i < result.rows.length; i++) 
+           {
+             var row = result.rows.item(i);
+             var component_type_id = row.Component_type_id;
+             var component_type_name = row.Component_type_name;
+
+             $("#component_win_component_type").append("<option value=" + component_type_id + ">" + 
+             component_type_name + "</option>");
+          }
+        }
+        else
+        {
+        }  
+
+      }, error);
+    }); 
+
+    $('#component_win_component_type').selectmenu('refresh');*/
+
+   db.transaction (function (transaction) 
+   {
+     var sql = "SELECT COMPONENT.Component_manufacturer_name, " +
+               "COMPONENT.Component_model_name, " +
+               "COMPONENT.Component_installed_date, " +
+               "COMPONENT.Component_last_maintenance_date, " +
+               "COMPONENT.Component_type_id, " +
+               "COMPONENT_TYPE.Component_type_name " +
+               "FROM COMPONENT, COMPONENT_TYPE " +
+               "WHERE COMPONENT.Component_type_id = COMPONENT_TYPE.Component_type_id and " +
+               "COMPONENT.Component_id=" + component_id + "";
+     transaction.executeSql (sql, undefined, 
+     function (transaction, result)
+     {
+        if (result.rows.length)
+        {
+          var row = result.rows.item(0);
+          var component_manufacturer_name = row.Component_manufacturer_name;
+          var component_model_name = row.Component_model_name;
+          var component_installed_date = row.Component_installed_date;
+          var component_last_maintenance_date = row.Component_last_maintenance_date;
+          var component_type_id = row.Component_type_id;
+          var component_type_name = row.Component_type_name;
+
+          $("#component_win_component_manufacturer_name").val(component_manufacturer_name);
+          $("#component_win_component_model_name").val(component_model_name);
+          $("#component_win_component_installed_date").val(component_installed_date);
+          $("#component_win_component_last_maintenance_date").val(component_last_maintenance_date);
+          $("#component_win_component_type").text(component_type_name);
+
+        }
+        else
+        {
+        }  
+
+    }, error);
+  }); 
+
+
+
+
+  get_component_list();
+  //alert(bike_id);
+
+});
+
+
+
+
+
+function get_bike_list() 
+{
+  db.transaction (function (transaction) 
+  {
+    var sql = "SELECT * FROM BIKE";
+    transaction.executeSql (sql, undefined, 
+    function (transaction, result)
+    {
+      $('#bike_list li').remove();
+
+      if (result.rows.length)
+      {
+        for (var i = 0; i < result.rows.length; i++) 
+        {
+          var row = result.rows.item(i);
+          var bike_id = row.Bike_id;
+          var bike_year = row.Bike_year;
+          var bike_manufacturer_name = row.Bike_manufacturer_name;
+          var bike_model_name = row.Bike_model_name;
+	        $('#bike_list').append("<li><a href='#bike_win' data-transition='slide' " +
+                            "onclick='bike_id=" + 
+                            bike_id + "'>" + bike_year + " " + 
+                            bike_manufacturer_name + " " + bike_model_name +
+                            "<p>Year: " + bike_year + "</p>" + 
+                            "<p>Manufacturer: " + bike_manufacturer_name + "</p>" + 
+                            "<p>Model: " + bike_model_name + "</p>" +  
+                            "</a></li>").listview('refresh');			
+        }
+      }
+      else
+      {
+      }  
+
+    });
+  });
+}
+
+
+$("#add_bike").bind ("click", function (event) {
+
+    $("#add_bike_win").unbind ().bind ("pagebeforeshow", function () {
+    });    
+
+    $.mobile.changePage ($("#add_bike_win"));
+
+});
+
+
+$("#add_bike_cancel").bind ("click", function (event)
+{
+    $("#add_bike_win").unbind ().bind ("pagebeforeshow", function ()
+      {
+      });    
+
+      $.mobile.changePage ($("#home"));
+});
+
+$("#add_bike_save").bind ("click", function (event)
+{
+
+  var bike_year = $("#bike_year").val ();
+  var bike_manufacturer_name = $("#bike_manufacturer_name").val ();
+  var bike_model_name = $("#bike_model_name").val ();
+  
+  db.transaction (
+    function (tx) {
+
+      /*
+       * INSERT THE BIKE INFO
+       */
+      tx.executeSql ("INSERT INTO BIKE (Bike_year, Bike_manufacturer_name, Bike_model_name) VALUES (?, ?, ?)", 
+        [bike_year, bike_manufacturer_name, bike_model_name]);
+
+      /*
+       * GET THE BIKE_ID OF THE BIKE JUST INSERTED
+       */
+
+      tx.executeSql ("SELECT Bike_id FROM BIKE ORDER BY Bike_id DESC", undefined, 
+        function (tx1, result1) {
+ 
+
+
+          bike_id_inserted = 0;
+
+          if (result1.rows.length) {
+                  
+            var row = result1.rows.item(0);
+            var bike_id_inserted = row.Bike_id;
+
+            tx1.executeSql ("SELECT Component_type_id FROM COMPONENT_TYPE", undefined, 
+              function (tx2, result2) {            
+
+                if (result2.rows.length) {
+
+                  for (var i = 0; i < result2.rows.length; i++) {
+
+                    var row = result2.rows.item(i);
+                    var component_type_id = row.Component_type_id;
+
+
+                    tx2.executeSql ("INSERT INTO COMPONENT VALUES (NULL, '', '', NULL, NULL, ?, ?)", 
+                      [component_type_id, bike_id_inserted]);
+             
+                  }
+
+                }
+           
+              }
+            );
+
+          }
+
+        }
+      );
+
+
+
+
+    }
+  );
+
+  $.mobile.changePage ($("#home"));
+
+});
+
+$("#bike_win_save").bind ("click", function (event)
+{
+
+  var bike_year = $("#bike_win_bike_year").val ();
+  var bike_manufacturer_name = $("#bike_win_bike_manufacturer_name").val ();
+  var bike_model_name = $("#bike_win_bike_model_name").val ();
+
+  db.transaction (function (transaction) 
+  {
+    var sql = "UPDATE BIKE SET Bike_year=?, Bike_manufacturer_name=?, Bike_model_name=? WHERE Bike_id=?";
+    transaction.executeSql (sql, [bike_year, bike_manufacturer_name, bike_model_name, bike_id], function ()
+    {    
+    }, error);
+  });
+
+  $.mobile.changePage ($("#home"));
+
+});
+
+
+$("#component_win_save").bind ("click", function (event)
+{
+
+  var component_manufacturer_name = $("#component_win_component_manufacturer_name").val ();
+  var component_model_name = $("#component_win_component_model_name").val ();
+  var component_installed_date = $("#component_win_component_installed_date").val ();
+  var component_last_maintenance_date = $("#component_win_component_last_maintenance_date").val ();
+
+  db.transaction (function (transaction) 
+  {
+    var sql = "UPDATE COMPONENT SET Component_manufacturer_name=?, Component_model_name=?, " +
+              "Component_installed_date=?, Component_last_maintenance_date=? WHERE Component_id=?";
+    transaction.executeSql (sql, [component_manufacturer_name, component_model_name, 
+                                  component_installed_date, component_last_maintenance_date, 
+                                  component_id], function ()
+    {    
+    }, error);
+  });
+
+  $.mobile.changePage ($("#bike_win"));
+
+});
+
+
+
+function get_component_list() 
+{
+  db.transaction (function (transaction) 
+  {
+    var sql = "SELECT Bike_id, " +
+              "Component_id, " +
+              "Component_manufacturer_name, " + 
+              "Component_model_name, " + 
+              "Component_type_name " + 
+              "FROM COMPONENT, COMPONENT_TYPE WHERE " +
+              "COMPONENT.Component_type_id = COMPONENT_TYPE.Component_type_id and " +
+              "Bike_id=" + bike_id + "";
+    transaction.executeSql (sql, undefined, 
+    function (transaction, result)
+    {
+      $('#component_list li').remove();
+
+      if (result.rows.length)
+      {
+        for (var i = 0; i < result.rows.length; i++) 
+        {
+          var row = result.rows.item(i);
+          var component_id = row.Component_id;
+          var component_type_name = row.Component_type_name;
+          var component_manufacturer_name = row.Component_manufacturer_name;
+          var component_model_name = row.Component_model_name;
+	        $('#component_list').append("<li><a href='#component_win' data-transition='slide' " + 
+                            "onclick='component_id=" + 
+                            component_id + "'>" +
+                            component_type_name + ": " + 
+                            component_manufacturer_name + "&nbsp;" + 
+                            component_model_name + 
+                            "</a></li>").listview('refresh');			
+        }
+      }
+      else
+      {
+      }  
+
+    }, error);
+  });
+}
+
+
+
+function get_component_type_list() 
+{
+  db.transaction (function (transaction) 
+  {
+    var sql = "SELECT * FROM COMPONENT_TYPE";
+    transaction.executeSql (sql, undefined, 
+    function (transaction, result)
+    {
+      $('#component_type').remove();
+
+      if (result.rows.length)
+      {
+        for (var i = 0; i < result.rows.length; i++) 
+        {
+          var row = result.rows.item(i);
+          var component_id = row.Component_id;
+          var component_manufacturer_name = row.Component_manufacturer_name;
+          var component_model_name = row.Component_model_name;
+	        $('#component_list').append("<li><a href='#component_win' onclick='component_id=" + 
+                            component_id + "'>" +
+                            component_manufacturer_name + "&nbsp;" + 
+                            component_model_name + 
+                            "</a></li>").listview('refresh');			
+        }
+      }
+      else
+      {
+      }  
+
+    }, error);
+  });
+}
+
+
+$("#bike_win_back").bind ("click", function (event) {
+
+    $("#bike_win").unbind ().bind ("pagebeforeshow", function () {
+    });    
+
+    $.mobile.changePage ($("#home"));
+
+});
+
+$("#bike_win_delete").bind ("click", function (event)
+{
+    db.transaction (function (transaction) 
+    {
+      var sql = "DELETE FROM BIKE WHERE Bike_id=?";
+      transaction.executeSql (sql, [bike_id], function ()
+      {       
+      }, error);
+    });
+
+    db.transaction (function (transaction) 
+    {
+      var sql = "DELETE FROM COMPONENT WHERE Bike_id=?";
+      transaction.executeSql (sql, [bike_id], function ()
+      {       
+      }, error);
+    });
+
+  $.mobile.changePage ($("#home"));
+});
+
+
+$("#component_win_back").bind ("click", function (event) {
+
+    $("#component_win").unbind ().bind ("pagebeforeshow", function () {
+    });    
+
+    $.mobile.changePage ($("#bike_win"));
+
+});
+
+
+
+
+function ok ()
+{
+}
+
+function error (transaction, err) 
+{
+  alert ("DB error : " + err.message);
+  return false;
+}
+
+
+</script>
+
+
+
+
